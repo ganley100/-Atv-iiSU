@@ -68,16 +68,20 @@ class MainActivity : Activity() {
     /** Builds the one big menu: favorites, games by console, apps, then system tiles. */
     private fun buildTiles(): Pair<List<Tile>, String> {
         val access = library.hasFileAccess()
+        val isHome = HomeOverrideService.isEnabled(this)
         val apps = library.loadApps()
         val games = if (access) library.scanGames() else emptyMap()
         val favorites = library.favorites()
         val allGames = games.values.flatten()
         val tiles = mutableListOf<Tile>()
 
-        if (!access) {
+        if (!access || !isHome) {
             tiles += Tile.Header("start", "Get started")
-            tiles += Tile.Action(Tile.Kind.FILE_ACCESS, "Allow file access", "📁")
-            tiles += Tile.Action(Tile.Kind.HELP, "Where to put ROMs", "?")
+            if (!isHome) tiles += Tile.Action(Tile.Kind.SET_HOME, "Make TileDeck your home screen", "⌂")
+            if (!access) {
+                tiles += Tile.Action(Tile.Kind.FILE_ACCESS, "Allow file access", "📁")
+                tiles += Tile.Action(Tile.Kind.HELP, "Where to put ROMs", "?")
+            }
         }
 
         val favGames = allGames.filter { it.key in favorites }.map { it.copy(section = "fav") }
@@ -104,6 +108,8 @@ class MainActivity : Activity() {
         tiles += Tile.Header("system", "System")
         tiles += Tile.Action(Tile.Kind.REFRESH, "Refresh", "↻")
         tiles += Tile.Action(Tile.Kind.SETTINGS, "TV settings", "⚙")
+        tiles += Tile.Action(Tile.Kind.STOCK_HOME, "Google TV home", "▣")
+        if (isHome) tiles += Tile.Action(Tile.Kind.SET_HOME, "Home screen settings", "⌂")
         if (access) tiles += Tile.Action(Tile.Kind.HELP, "ROM folders", "?")
 
         return tiles to "${allGames.size} games  ·  ${apps.size} apps"
@@ -131,6 +137,10 @@ class MainActivity : Activity() {
                 Tile.Kind.HELP -> showHelp()
                 Tile.Kind.REFRESH -> { art.forgetMissing(); reload() }
                 Tile.Kind.SETTINGS -> Launch.start(this, Intent(Settings.ACTION_SETTINGS))
+                Tile.Kind.SET_HOME -> showSetHome()
+                Tile.Kind.STOCK_HOME -> if (!HomeOverrideService.openStockHome(this)) {
+                    toast("Google TV home isn't available on this device")
+                }
             }
             is Tile.Header -> Unit
         }
@@ -199,6 +209,29 @@ class MainActivity : Activity() {
             .show()
     }
 
+    private fun showSetHome() {
+        val on = HomeOverrideService.isEnabled(this)
+        val message = if (on) {
+            "TileDeck is your home screen. The Home button and turning on the TV bring you here.\n\n" +
+                "To go back to Google TV's home screen, turn off \"TileDeck home screen\" in Accessibility settings."
+        } else {
+            "Google TV doesn't let you pick a home app, so TileDeck uses an accessibility switch to " +
+                "take over whenever the Google TV home would appear (Home button, startup, leaving an app).\n\n" +
+                "On the next screen choose \"TileDeck home screen\" and turn it on. It only watches which app " +
+                "is on screen — it doesn't read anything else."
+        }
+        AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert)
+            .setTitle(if (on) "Home screen: on" else "Make TileDeck your home screen")
+            .setMessage(message)
+            .setPositiveButton("Accessibility settings") { _, _ ->
+                if (!Launch.start(this, Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))) {
+                    toast("Open Settings → System → Accessibility")
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
     private fun showHelp() {
         val folders = Systems.all.joinToString("\n") { "  ROMs/${it.folders.first()}   →  ${it.name}" }
         AlertDialog.Builder(this, android.R.style.Theme_Material_Light_Dialog_Alert)
@@ -244,7 +277,9 @@ class MainActivity : Activity() {
     override fun onBackPressed() = handleBack()
 
     private fun handleBack() {
-        val launchedAsHome = intent?.hasCategory(Intent.CATEGORY_HOME) == true
+        val launchedAsHome = intent?.hasCategory(Intent.CATEGORY_HOME) == true ||
+            intent?.getBooleanExtra(EXTRA_FROM_HOME, false) == true ||
+            HomeOverrideService.isEnabled(this)
         if (launchedAsHome) {
             // Home screens don't close; jump back to the top instead.
             focusedOnce = false
@@ -266,7 +301,13 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    private companion object {
-        const val REQ_STORAGE = 1
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    companion object {
+        const val EXTRA_FROM_HOME = "from_home"
+        private const val REQ_STORAGE = 1
     }
 }

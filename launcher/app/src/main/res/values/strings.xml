@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">TileDeck</string>
     <string name="hint_bar">OK / A  Open        Hold OK / X / Menu  Options        B  Back</string>
+    <string name="home_override_label">TileDeck home screen</string>
+    <string name="home_override_description">Opens TileDeck whenever the Google TV home screen would appear, so TileDeck works as your home screen. It only watches which app is on screen and reads nothing else.</string>
 </resources>

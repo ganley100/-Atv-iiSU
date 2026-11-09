@@ -41,5 +41,5 @@ sealed class Tile {
         override val section get() = "system"
     }
 
-    enum class Kind { FILE_ACCESS, HELP, REFRESH, SETTINGS }
+    enum class Kind { FILE_ACCESS, HELP, REFRESH, SETTINGS, SET_HOME, STOCK_HOME }
 }

@@ -8,6 +8,7 @@ Android apps live in one big menu** of rounded square tiles, Wii U-menu style.
 - Favorites row at the top
 - Works with the TV remote or a Bluetooth gamepad
 - Games open in **RetroArch** automatically; hold OK to pick another emulator instead
+- Can permanently replace the Google TV home screen (see below)
 
 ## Install it (no computer needed)
 
@@ -24,6 +25,47 @@ https://github.com/ganley100/-Atv-iiSU/releases/download/tiledeck-latest/TileDec
 4. Install, then open **TileDeck** from your apps row.
 
 To update, repeat steps 3–4. Your favorites are kept.
+
+## Make it your home screen (permanent)
+
+Google TV has no "default home app" setting, so there are two ways to do it.
+
+### Option 1 — no computer needed (recommended)
+
+1. Open TileDeck and pick **Make TileDeck your home screen**.
+2. Choose **Accessibility settings**, select **TileDeck home screen**, and turn it on.
+
+From then on, whenever Google TV's home screen would appear (Home button, turning the TV on,
+leaving an app), TileDeck replaces it. It stays on after restarts. You may see the Google TV home
+flash for a split second before TileDeck covers it.
+
+Need the old home for a moment? Use the **Google TV home** tile in the System row. To undo,
+turn the switch off in Settings → System → Accessibility.
+
+### Option 2 — fully replace the Google TV home (needs adb once)
+
+This disables the Google TV home app completely, so the Home button goes straight to TileDeck
+with no flash. Do this only after TileDeck is installed and working.
+
+```
+adb connect <tv-ip>:5555
+adb shell pm disable-user --user 0 com.google.android.apps.tv.launcherx
+adb shell pm disable-user --user 0 com.google.android.tungsten.setupwraith
+```
+
+If Android asks which home app to use, pick TileDeck and choose **Always**.
+
+You'll lose the Google TV home features (recommendations, profiles, the home screen's quick
+settings panel). Use the **TV settings** tile in TileDeck for settings instead.
+
+**To undo** (or if anything goes wrong):
+
+```
+adb shell pm enable com.google.android.apps.tv.launcherx
+adb shell pm enable com.google.android.tungsten.setupwraith
+```
+
+A factory reset also restores everything.
 
 ## Let it see your ROMs
 
