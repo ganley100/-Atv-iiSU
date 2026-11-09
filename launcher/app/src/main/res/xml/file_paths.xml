@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <external-path name="storage" path="." />
+    <!-- USB drives live under /storage/XXXX-XXXX -->
+    <root-path name="root" path="/" />
+</paths>
